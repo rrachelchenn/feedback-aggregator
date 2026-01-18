@@ -1,0 +1,17 @@
+name = "feedback-aggregator"
+main = "src/index.ts"
+compatibility_date = "2024-05-12"
+
+# D1 Database binding
+[[d1_databases]]
+binding = "FEEDBACK_DB"
+database_name = "feedback-aggregator-db"
+database_id = "local"
+
+# Workers AI binding
+[ai]
+binding = "AI"
+
+# Serve static assets from the public folder
+[assets]
+directory = "./public"

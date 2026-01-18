@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pulse | Customer Feedback Intelligence</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['DM Sans', 'sans-serif'],
+            mono: ['DM Mono', 'monospace'],
+          },
+          colors: {
+            midnight: '#0a0a0f',
+            surface: '#12121a',
+            card: '#1a1a24',
+            border: '#2a2a3a',
+            accent: '#6366f1',
+            urgent: '#ef4444',
+            warning: '#f59e0b', 
+            success: '#10b981',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: #0a0a0f;
+      background-image: 
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.15), transparent),
+        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(239, 68, 68, 0.08), transparent);
+    }
+    
+    .bubble {
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      animation: float 8s ease-in-out infinite;
+    }
+    
+    .bubble:hover {
+      transform: scale(1.12) translateY(-5px);
+      z-index: 50;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-8px); }
+    }
+    
+    .bubble:nth-child(2n) { animation-delay: -2s; }
+    .bubble:nth-child(3n) { animation-delay: -4s; }
+    .bubble:nth-child(4n) { animation-delay: -1s; }
+    
+    .glow-urgent {
+      box-shadow: 0 0 40px rgba(239, 68, 68, 0.25), inset 0 0 30px rgba(239, 68, 68, 0.1);
+    }
+    
+    .glow-positive {
+      box-shadow: 0 0 40px rgba(16, 185, 129, 0.25), inset 0 0 30px rgba(16, 185, 129, 0.1);
+    }
+    
+    .glow-neutral {
+      box-shadow: 0 0 40px rgba(245, 158, 11, 0.2), inset 0 0 30px rgba(245, 158, 11, 0.08);
+    }
+    
+    .priority-card {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.02) 100%);
+      border-left: 3px solid #ef4444;
+    }
+    
+    .praise-card {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.02) 100%);
+      border-left: 3px solid #10b981;
+    }
+    
+    .feed-item {
+      animation: slideIn 0.4s ease-out forwards;
+    }
+    
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    
+    .pulse-dot {
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    #bubbles-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.5rem;
+      min-height: 300px;
+    }
+    
+    .source-icon {
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+    }
+    
+    .build-idea {
+      border-left: 2px solid #6366f1;
+      padding-left: 12px;
+      margin-left: 4px;
+    }
+  </style>
+</head>
+<body class="font-sans text-gray-100 min-h-screen">
+  <!-- Header -->
+  <header class="border-b border-border/50 bg-surface/80 backdrop-blur-xl sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-purple-500 flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold text-white">Pulse</h1>
+          <p class="text-xs text-gray-500">Customer Feedback Intelligence</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2 text-sm text-gray-400">
+          <span class="w-2 h-2 rounded-full bg-success pulse-dot"></span>
+          <span>Live • Syncing from 6 sources</span>
+        </div>
+        <button onclick="showAddModal()" class="px-4 py-2 border border-border hover:bg-card rounded-lg font-medium transition-colors flex items-center gap-2 text-gray-300 hover:text-white">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Add Note
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-6 py-8">
+    <!-- Hero Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div class="bg-card border border-border rounded-2xl p-5">
+        <div class="text-3xl font-bold text-white" id="total-count">-</div>
+        <div class="text-sm text-gray-500 mt-1">Total Signals</div>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-5">
+        <div class="text-3xl font-bold text-urgent" id="pain-count">-</div>
+        <div class="text-sm text-gray-500 mt-1">Pain Points</div>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-5">
+        <div class="text-3xl font-bold text-success" id="praise-count">-</div>
+        <div class="text-sm text-gray-500 mt-1">Positive Signals</div>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-5">
+        <div class="text-3xl font-bold text-accent" id="action-count">-</div>
+        <div class="text-sm text-gray-500 mt-1">Action Items</div>
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Left Column: Priority Actions -->
+      <div class="lg:col-span-1 space-y-6">
+        
+        <!-- What to Build Next -->
+        <div class="bg-card border border-border rounded-2xl overflow-hidden">
+          <div class="px-5 py-4 border-b border-border flex items-center gap-2">
+            <svg class="w-5 h-5 text-urgent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            <h2 class="font-semibold text-white">What to Build Next</h2>
+          </div>
+          <div class="divide-y divide-border" id="priority-list">
+            <div class="text-gray-500 text-sm py-8 text-center">Loading priorities...</div>
+          </div>
+        </div>
+
+        <!-- What Customers Love -->
+        <div class="bg-card border border-border rounded-2xl overflow-hidden">
+          <div class="px-5 py-4 border-b border-border flex items-center gap-2">
+            <svg class="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+            </svg>
+            <h2 class="font-semibold text-white">What Customers Love</h2>
+          </div>
+          <div class="divide-y divide-border" id="praise-list">
+            <div class="text-gray-500 text-sm py-8 text-center">Loading...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Bubble Visualization + Sources + Feed -->
+      <div class="lg:col-span-2 space-y-6">
+        <div class="bg-card border border-border rounded-2xl overflow-hidden">
+          <div class="px-5 py-4 border-b border-border flex items-center justify-between">
+            <div>
+              <h2 class="font-semibold text-white">Feedback Themes</h2>
+              <p class="text-sm text-gray-500 mt-0.5">Bigger = more evidence • Red = pain point • Green = praise</p>
+            </div>
+            <button onclick="loadData()" class="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-midnight" title="Refresh">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+            </button>
+          </div>
+          
+          <div id="bubbles-container">
+            <div class="text-gray-500 text-center py-16">
+              <div class="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full mx-auto mb-4"></div>
+              Loading themes...
+            </div>
+          </div>
+        </div>
+
+        <!-- Data Sources -->
+        <div class="bg-card border border-border rounded-2xl p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-white">Connected Sources</h3>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3" id="sources-grid">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+
+        <!-- Live Feed -->
+        <div class="bg-card border border-border rounded-2xl overflow-hidden">
+          <div class="px-5 py-4 border-b border-border flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-success pulse-dot"></span>
+              <h2 class="font-semibold text-white">Recent Feedback</h2>
+            </div>
+            <span class="text-xs text-gray-500">Auto-synced</span>
+          </div>
+          <div class="divide-y divide-border max-h-96 overflow-y-auto" id="live-feed">
+            <div class="p-4 text-gray-500 text-sm text-center">Loading feed...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Add Note Modal -->
+  <div id="add-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="bg-card border border-border rounded-2xl p-6 max-w-lg w-full mx-4 shadow-2xl">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-xl font-bold text-white">Add a Note</h2>
+          <p class="text-sm text-gray-500 mt-1">For verbal feedback or manual entries</p>
+        </div>
+        <button onclick="hideAddModal()" class="text-gray-400 hover:text-white p-1">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      
+      <form onsubmit="submitFeedback(event)">
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-300 mb-2">Where did this come from?</label>
+          <select id="source-type" class="w-full bg-midnight border border-border rounded-xl px-4 py-3 text-white focus:border-accent focus:outline-none">
+            <option value="ticket">🎫 Customer Support Ticket</option>
+            <option value="github">🐙 GitHub Issue</option>
+            <option value="email">📧 Email</option>
+            <option value="twitter">𝕏 X / Twitter</option>
+            <option value="discord">💬 Discord</option>
+            <option value="forum">💭 Community Forum</option>
+          </select>
+        </div>
+        
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-300 mb-2">What did they say?</label>
+          <textarea id="feedback-content" rows="4" class="w-full bg-midnight border border-border rounded-xl px-4 py-3 text-white focus:border-accent focus:outline-none resize-none" placeholder="Paste or type the feedback here..."></textarea>
+        </div>
+        
+        <div class="flex gap-3">
+          <button type="button" onclick="hideAddModal()" class="flex-1 px-4 py-3 border border-border rounded-xl font-medium hover:bg-midnight transition-colors text-gray-300">
+            Cancel
+          </button>
+          <button type="submit" id="submit-btn" class="flex-1 px-4 py-3 bg-accent hover:bg-indigo-600 rounded-xl font-medium transition-colors text-white">
+            Analyze & Add
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div id="detail-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="bg-card border border-border rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl max-h-[85vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold text-white" id="detail-title">Theme Details</h2>
+        <button onclick="hideDetailModal()" class="text-gray-400 hover:text-white p-1">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div id="detail-content"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '';
+    
+    const SOURCE_META = {
+      ticket: { icon: '🎫', label: 'Support Tickets', color: 'bg-green-500/20 text-green-400 border-green-500/30' },
+      github: { icon: '🐙', label: 'GitHub Issues', color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
+      email: { icon: '📧', label: 'Email', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+      twitter: { icon: '𝕏', label: 'X / Twitter', color: 'bg-gray-500/20 text-gray-300 border-gray-500/30' },
+      discord: { icon: '💬', label: 'Discord', color: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' },
+      forum: { icon: '💭', label: 'Community Forums', color: 'bg-orange-500/20 text-orange-400 border-orange-500/30' },
+    };
+    
+    // Store bubble data globally for detail modal
+    let bubblesCache = {};
+    
+    async function loadData() {
+      try {
+        const [bubblesRes, statsRes, feedbackRes] = await Promise.all([
+          fetch(`${API_BASE}/api/bubbles`),
+          fetch(`${API_BASE}/api/stats`),
+          fetch(`${API_BASE}/api/feedback`)
+        ]);
+        
+        const bubblesData = await bubblesRes.json();
+        const statsData = await statsRes.json();
+        const feedbackData = await feedbackRes.json();
+        
+        // Cache bubbles for detail view
+        if (bubblesData.bubbles) {
+          bubblesData.bubbles.forEach(b => bubblesCache[b.category] = b);
+        }
+        
+        renderStats(statsData.stats, bubblesData.bubbles);
+        renderPriorities(statsData.stats);
+        renderPraise(statsData.stats);
+        renderBubbles(bubblesData.bubbles);
+        renderLiveFeed(feedbackData.feedback);
+        renderSources(statsData.stats);
+      } catch (error) {
+        console.error('Failed to load:', error);
+      }
+    }
+    
+    function renderStats(stats, bubbles) {
+      document.getElementById('total-count').textContent = stats?.totalFeedback || 0;
+      document.getElementById('pain-count').textContent = stats?.negativeFeedbackCount || 0;
+      document.getElementById('praise-count').textContent = stats?.positiveFeedbackCount || 0;
+      
+      // Count total action suggestions (3 per bubble with build_ideas)
+      const bubblesWithIdeas = bubbles?.filter(b => b.build_ideas) || [];
+      const totalActions = bubblesWithIdeas.reduce((sum, b) => {
+        return sum + (b.build_ideas?.split('|').length || 0);
+      }, 0);
+      document.getElementById('action-count').textContent = totalActions;
+    }
+    
+    function renderPriorities(stats) {
+      const container = document.getElementById('priority-list');
+      const painPoints = stats?.topPainPoints || [];
+      
+      if (painPoints.length === 0) {
+        container.innerHTML = '<div class="text-gray-500 text-sm py-8 text-center">No pain points detected! 🎉</div>';
+        return;
+      }
+      
+      container.innerHTML = painPoints.map((item, i) => {
+        const buildIdeas = item.build_ideas ? item.build_ideas.split('|').slice(0, 2) : [];
+        
+        return `
+          <div class="p-4 hover:bg-midnight/50 transition-colors cursor-pointer" onclick="showDetail('${item.category.replace(/'/g, "\\'")}')">
+            <div class="flex items-start gap-3">
+              <div class="w-7 h-7 rounded-lg bg-urgent/20 text-urgent flex items-center justify-center font-bold text-sm shrink-0">${i + 1}</div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="font-semibold text-white">${item.category}</span>
+                  <span class="text-xs text-gray-500 shrink-0">${item.feedback_count} signal${item.feedback_count > 1 ? 's' : ''}</span>
+                </div>
+                ${item.action_summary ? `<p class="text-sm text-gray-400 mt-1.5 leading-relaxed">${item.action_summary}</p>` : ''}
+                ${buildIdeas.length > 0 ? `
+                  <div class="mt-3 space-y-1.5">
+                    ${buildIdeas.map(idea => `<div class="build-idea text-xs text-accent">${idea}</div>`).join('')}
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function renderPraise(stats) {
+      const container = document.getElementById('praise-list');
+      const praise = stats?.topPraise?.filter(p => p.avg_sentiment > 0.3) || [];
+      
+      if (praise.length === 0) {
+        container.innerHTML = '<div class="text-gray-500 text-sm py-8 text-center">No strong praise yet</div>';
+        return;
+      }
+      
+      container.innerHTML = praise.map(item => `
+        <div class="p-4 hover:bg-midnight/50 transition-colors cursor-pointer" onclick="showDetail('${item.category.replace(/'/g, "\\'")}')">
+          <div class="flex items-center justify-between gap-2 mb-1">
+            <span class="font-semibold text-white">${item.category}</span>
+            <span class="text-xs text-success">${item.feedback_count} mention${item.feedback_count > 1 ? 's' : ''}</span>
+          </div>
+          ${item.action_summary ? `<p class="text-sm text-gray-400 leading-relaxed">${item.action_summary}</p>` : ''}
+        </div>
+      `).join('');
+    }
+    
+    function formatTimeAgo(dateString) {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+      
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffHours < 24) return `${diffHours}h ago`;
+      if (diffDays < 7) return `${diffDays}d ago`;
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+    
+    function renderLiveFeed(feedback) {
+      const container = document.getElementById('live-feed');
+      
+      if (!feedback || feedback.length === 0) {
+        container.innerHTML = '<div class="p-4 text-gray-500 text-sm text-center">No feedback yet</div>';
+        return;
+      }
+      
+      container.innerHTML = feedback.slice(0, 8).map((item, i) => {
+        const source = SOURCE_META[item.source_type] || { icon: '📝', label: item.source_type, color: 'bg-gray-500/20 text-gray-300 border-gray-500/30' };
+        const timeAgo = formatTimeAgo(item.created_at);
+        
+        return `
+          <div class="feed-item p-4 hover:bg-midnight/50 transition-colors" style="animation-delay: ${i * 0.05}s">
+            <div class="flex items-start gap-3">
+              <div class="source-icon ${source.color} border shrink-0 mt-0.5">${source.icon}</div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm text-gray-300">${item.content.length > 120 ? item.content.substring(0, 120) + '...' : item.content}</p>
+                <div class="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                  <span>${source.label}</span>
+                  <span>•</span>
+                  <span>${timeAgo}</span>
+                  <span>•</span>
+                  <span class="px-2 py-0.5 rounded-full ${item.sentiment_score < -0.2 ? 'bg-urgent/20 text-urgent' : item.sentiment_score > 0.2 ? 'bg-success/20 text-success' : 'bg-warning/20 text-warning'}">${item.category}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function renderSources(stats) {
+      const container = document.getElementById('sources-grid');
+      const bySource = stats?.bySource || [];
+      
+      const allSources = ['ticket', 'github', 'email', 'twitter', 'discord', 'forum'];
+      
+      container.innerHTML = allSources.map(source => {
+        const data = bySource.find(s => s.source_type === source);
+        const meta = SOURCE_META[source];
+        const count = data?.count || 0;
+        const isActive = count > 0;
+        
+        return `
+          <div class="flex items-center gap-3 p-3 rounded-xl ${isActive ? 'bg-midnight' : 'bg-midnight/50 opacity-50'}">
+            <div class="source-icon ${meta.color} border text-base w-8 h-8">${meta.icon}</div>
+            <div class="flex-1">
+              <div class="text-sm font-medium ${isActive ? 'text-white' : 'text-gray-500'}">${meta.label}</div>
+              <div class="text-xs text-gray-500">${count} signal${count !== 1 ? 's' : ''}</div>
+            </div>
+            ${isActive ? '<span class="w-2 h-2 rounded-full bg-success"></span>' : '<span class="w-2 h-2 rounded-full bg-gray-600"></span>'}
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function renderBubbles(bubbles) {
+      const container = document.getElementById('bubbles-container');
+      
+      if (!bubbles || bubbles.length === 0) {
+        container.innerHTML = `
+          <div class="text-gray-400 text-center py-16">
+            <p class="mb-4">No themes detected yet</p>
+            <button onclick="showAddModal()" class="px-6 py-3 bg-accent hover:bg-indigo-600 rounded-xl font-medium transition-colors text-white">
+              Add First Note
+            </button>
+          </div>
+        `;
+        return;
+      }
+      
+      const maxWeight = Math.max(...bubbles.map(b => b.total_weight));
+      const minSize = 70;
+      const maxSize = 160;
+      
+      container.innerHTML = bubbles.map((bubble, index) => {
+        const normalizedWeight = bubble.total_weight / maxWeight;
+        const size = minSize + (maxSize - minSize) * normalizedWeight;
+        
+        let bgClass, glowClass, borderClass, textClass;
+        if (bubble.avg_sentiment < -0.2) {
+          bgClass = 'bg-gradient-to-br from-urgent/25 to-urgent/5';
+          glowClass = 'glow-urgent';
+          borderClass = 'border-urgent/40';
+          textClass = 'text-urgent';
+        } else if (bubble.avg_sentiment > 0.2) {
+          bgClass = 'bg-gradient-to-br from-success/25 to-success/5';
+          glowClass = 'glow-positive';
+          borderClass = 'border-success/40';
+          textClass = 'text-success';
+        } else {
+          bgClass = 'bg-gradient-to-br from-warning/20 to-warning/5';
+          glowClass = 'glow-neutral';
+          borderClass = 'border-warning/40';
+          textClass = 'text-warning';
+        }
+        
+        const fontSize = Math.max(11, Math.min(14, size / 12));
+        
+        return `
+          <div 
+            class="bubble ${bgClass} ${glowClass} border ${borderClass} rounded-full flex flex-col items-center justify-center cursor-pointer fade-in"
+            style="width: ${size}px; height: ${size}px; animation-delay: ${index * 0.05}s"
+            onclick="showDetail('${bubble.category.replace(/'/g, "\\'")}')"
+            title="${bubble.feedback_count} signals"
+          >
+            <div class="text-center px-2">
+              <div class="font-semibold leading-tight text-white" style="font-size: ${fontSize}px">${bubble.category}</div>
+              <div class="text-xs ${textClass} mt-1 opacity-80">${bubble.feedback_count}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function showAddModal() {
+      document.getElementById('add-modal').classList.remove('hidden');
+      document.getElementById('add-modal').classList.add('flex');
+    }
+    
+    function hideAddModal() {
+      document.getElementById('add-modal').classList.add('hidden');
+      document.getElementById('add-modal').classList.remove('flex');
+      document.getElementById('feedback-content').value = '';
+    }
+    
+    async function submitFeedback(event) {
+      event.preventDefault();
+      
+      const sourceType = document.getElementById('source-type').value;
+      const content = document.getElementById('feedback-content').value.trim();
+      
+      if (!content) {
+        alert('Please enter the feedback');
+        return;
+      }
+      
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Analyzing...';
+      
+      try {
+        const response = await fetch(`${API_BASE}/api/feedback`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content, source_type: sourceType })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          hideAddModal();
+          loadData();
+        } else {
+          alert('Error: ' + (data.error || 'Unknown error'));
+        }
+      } catch (error) {
+        alert('Failed: ' + error.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Analyze & Add';
+      }
+    }
+    
+    async function showDetail(category) {
+      document.getElementById('detail-modal').classList.remove('hidden');
+      document.getElementById('detail-modal').classList.add('flex');
+      document.getElementById('detail-title').textContent = category;
+      document.getElementById('detail-content').innerHTML = '<div class="text-gray-400">Loading...</div>';
+      
+      try {
+        const response = await fetch(`${API_BASE}/api/feedback?category=${encodeURIComponent(category)}`);
+        const data = await response.json();
+        
+        // Get cached bubble data for summary
+        const bubble = bubblesCache[category];
+        const buildIdeas = bubble?.build_ideas ? bubble.build_ideas.split('|') : [];
+        
+        let html = '';
+        
+        // AI Summary Section
+        if (bubble?.action_summary) {
+          html += `
+            <div class="bg-midnight border border-border rounded-xl p-4 mb-4">
+              <div class="flex items-center gap-2 mb-2">
+                <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                </svg>
+                <span class="font-semibold text-white text-sm">AI Summary</span>
+              </div>
+              <p class="text-gray-300 text-sm leading-relaxed">${bubble.action_summary}</p>
+            </div>
+          `;
+        }
+        
+        // Build Ideas Section
+        if (buildIdeas.length > 0) {
+          html += `
+            <div class="bg-accent/10 border border-accent/30 rounded-xl p-4 mb-4">
+              <div class="flex items-center gap-2 mb-3">
+                <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                </svg>
+                <span class="font-semibold text-white text-sm">Ideas to Explore</span>
+              </div>
+              <div class="space-y-2">
+                ${buildIdeas.map((idea, i) => `
+                  <div class="flex items-start gap-2">
+                    <span class="text-accent font-mono text-xs mt-0.5">${i + 1}.</span>
+                    <span class="text-sm text-gray-300">${idea}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+        
+        // Evidence Section
+        if (data.feedback && data.feedback.length > 0) {
+          html += `
+            <div class="mb-3">
+              <span class="text-sm font-medium text-gray-400">${data.feedback.length} piece${data.feedback.length > 1 ? 's' : ''} of evidence</span>
+            </div>
+            <div class="space-y-3">
+              ${data.feedback.map(f => {
+                const source = SOURCE_META[f.source_type] || { icon: '📝', color: 'bg-gray-500/20 text-gray-300 border-gray-500/30', label: f.source_type };
+                return `
+                  <div class="bg-midnight border border-border rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                      <span class="source-icon ${source.color} border">${source.icon}</span>
+                      <span class="text-sm text-gray-400">${source.label}</span>
+                      <span class="text-xs px-2 py-0.5 rounded-full ml-auto ${f.sentiment_score < -0.2 ? 'bg-urgent/20 text-urgent' : f.sentiment_score > 0.2 ? 'bg-success/20 text-success' : 'bg-warning/20 text-warning'}">
+                        ${f.sentiment_score < -0.2 ? 'Negative' : f.sentiment_score > 0.2 ? 'Positive' : 'Neutral'}
+                      </span>
+                    </div>
+                    <p class="text-gray-200 text-sm leading-relaxed">${f.content}</p>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `;
+        } else {
+          html += '<div class="text-gray-400 text-center py-4">No feedback found</div>';
+        }
+        
+        document.getElementById('detail-content').innerHTML = html;
+        
+      } catch (error) {
+        document.getElementById('detail-content').innerHTML = `<div class="text-urgent">Error: ${error.message}</div>`;
+      }
+    }
+    
+    function hideDetailModal() {
+      document.getElementById('detail-modal').classList.add('hidden');
+      document.getElementById('detail-modal').classList.remove('flex');
+    }
+    
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        hideAddModal();
+        hideDetailModal();
+      }
+    });
+    
+    loadData();
+  </script>
+
+  <footer class="border-t border-border mt-12 py-6">
+    <div class="max-w-7xl mx-auto px-6 text-center text-sm text-gray-600">
+      <p>Built with Cloudflare Workers • Workers AI • D1 Database</p>
+    </div>
+  </footer>
+</body>
+</html>
